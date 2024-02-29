@@ -1,4 +1,4 @@
-﻿#pragma execution_character_set("utf-8")
+#pragma execution_character_set("utf-8")
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -196,20 +196,17 @@ void MainWindow::save_clicked() {
 }
 
 void MainWindow::view_updata(std::vector<PointCloudT::Ptr> vector_cloud, std::vector<int> index) {
-    cloud_viewer.reset(new pcl::visualization::PCLVisualizer("viewer", false));
-    vtkNew<vtkGenericOpenGLRenderWindow> window;
-    window->AddRenderer(cloud_viewer->getRendererCollection()->GetFirstRenderer());
-    ui->openGLWidget->setRenderWindow(window.Get());
-
     cloud_viewer->removeAllPointClouds();
     cloud_viewer->removeAllShapes();
-    for (int i = 0; i<vector_cloud.size(); i++) {
+
+    for (size_t i = 0; i < vector_cloud.size(); ++i) {
         if (index[i] == 1) {
-            pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZ>render(vector_cloud[i], "intensity");
-            cloud_viewer->addPointCloud<pcl::PointXYZ>(vector_cloud[i], render, std::to_string(i));
-            cloud_viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, point_size, std::to_string(i));
+            pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZ> color_handler(vector_cloud[i], "z");
+            cloud_viewer->addPointCloud(vector_cloud[i], color_handler, std::to_string(i));
+            cloud_viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, point_size, std::to_string(i));
         }
     }
+
     cloud_viewer->resetCamera();
     ui->openGLWidget->update();
 }
@@ -230,17 +227,18 @@ void MainWindow::on_treeView_clicked(const QModelIndex &index) {
     ui->textBrowser_2->setFont(QFont("Arial", 9, QFont::Normal));
 
     // 可视化更改
-    if (item == nullptr)
+    if (item == nullptr || !item->isCheckable()) {
         return;
-    if (item->isCheckable()) {
-        //判断状态
-        Qt::CheckState state = item->checkState();  // 获取当前的选择状态
-        if (Qt::Checked == state) {
-            cloud_index[index.row()] = 1;
-        }
-        if (Qt::Unchecked == state) {
-             cloud_index[index.row()] = 0;
-        }
-        view_updata(cloud_vec, cloud_index);
     }
+
+    Qt::CheckState state = item->checkState();
+    int cloudIndex = index.row();
+
+    if (state == Qt::Checked) {
+        cloud_index[cloudIndex] = 1;
+    } else {
+        cloud_index[cloudIndex] = 0;
+    }
+
+    view_updata(cloud_vec, cloud_index);
 }
